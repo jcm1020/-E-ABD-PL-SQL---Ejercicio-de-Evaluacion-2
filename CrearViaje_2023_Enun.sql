@@ -94,13 +94,39 @@ create or replace procedure crearViaje( m_idRecorrido int, m_idAutocar int, m_fe
     
     VIAJE_DUPLICADO exception;
     PRAGMA EXCEPTION_INIT( VIAJE_DUPLICADO, -20004);
+    
+    v_recorrido  recorridos%ROWTYPE;
+    num_recorridos  integer;
+    num_autocares integer;
+    num_viajes integer;
 begin
-    /*
-    raise_application_error(-20001, 'Recorrido inexistente.');
-    raise_application_error(-20002, 'Autocar inexistente.');
-    raise_application_error(-20003, 'Autocar ocupado.');
-    raise_application_error(-20004, 'Viaje duplicado.');
-    */
+    SELECT COUNT(*) INTO num_recorridos FROM recorridos WHERE idrecorrido = m_idRecorrido;
+    IF num_recorridos <=0 THEN
+        raise_application_error(-20001, 'Recorrido inexistente.');
+    --ELSE
+        
+    END IF;
+    SELECT COUNT(*) INTO num_autocares FROM autocares WHERE idautocar = m_idAutocar;
+    IF num_autocares <=0 THEN
+        raise_application_error(-20002, 'Autocar inexistente.');
+    --ELSE
+        
+    END IF;
+    SELECT COUNT(*) INTO num_autocares FROM viajes WHERE  idautocar = m_idAutocar AND TRUNC(fecha) = TRUNC(m_fecha);
+    IF num_autocares > 0 THEN
+        raise_application_error(-20003, 'Autocar ocupado.');
+    --ELSE
+        
+    END IF;
+    SELECT COUNT(*) INTO num_viajes FROM viajes WHERE idautocar = m_idAutocar AND idrecorrido = m_idRecorrido AND TRUNC(fecha) = TRUNC(m_fecha);
+    --SELECT COUNT(*) INTO num_viajes FROM viajes WHERE idautocar = m_idAutocar AND idrecorrido = m_idRecorrido;
+    IF num_viajes > 0 THEN
+        raise_application_error(-20004, 'Viaje duplicado.');
+    ELSE
+        INSERT INTO viajes (idViaje, idAutocar, idRecorrido, fecha, nPlazasLibres,  Conductor) 
+    VALUES (seq_viajes.nextval, m_idAutocar, m_idRecorrido, m_fecha, 40, m_conductor);
+    END IF;
+    
 end;
 /
 
