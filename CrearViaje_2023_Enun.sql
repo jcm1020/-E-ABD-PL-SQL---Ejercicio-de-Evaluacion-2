@@ -83,8 +83,24 @@ commit;
 
 create or replace procedure crearViaje( m_idRecorrido int, m_idAutocar int, m_fecha date, m_conductor varchar) is
 
+    RECORRIDO_INEXISTENTE exception;
+    PRAGMA EXCEPTION_INIT( RECORRIDO_INEXISTENTE, -20001);
+    
+    AUTOCAR_INEXISTENTE exception;
+    PRAGMA EXCEPTION_INIT( AUTOCAR_INEXISTENTE, -20002);
+    
+    AUTOCAR_OCUPADO exception;
+    PRAGMA EXCEPTION_INIT( AUTOCAR_OCUPADO, -20003);
+    
+    VIAJE_DUPLICADO exception;
+    PRAGMA EXCEPTION_INIT( VIAJE_DUPLICADO, -20004);
 begin
-    null; -- Retira el null y rellena el procedimiento
+    /*
+    raise_application_error(-20001, 'Recorrido inexistente.');
+    raise_application_error(-20002, 'Autocar inexistente.');
+    raise_application_error(-20003, 'Autocar ocupado.');
+    raise_application_error(-20004, 'Viaje duplicado.');
+    */
 end;
 /
 
