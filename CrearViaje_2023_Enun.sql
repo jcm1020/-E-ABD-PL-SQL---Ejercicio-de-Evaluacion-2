@@ -101,6 +101,7 @@ create or replace procedure crearViaje( m_idRecorrido int, m_idAutocar int, m_fe
     num_viajes integer;
     num_plazas integer;
     plazas integer:=25;
+    v_idviaje integer;
     constraint varchar(200);
 begin
     --Control de excepcion de recorrido inexistente
@@ -139,12 +140,14 @@ begin
             END IF;
         exception
             when NO_DATA_FOUND then
-                    dbms_output.put_line('No se encontraron datos en SELECT');
+                    --dbms_output.put_line('No se encontraron datos en SELECT');
                     --raise_application_error(-20005, 'Modelo inexistente.');
                     plazas:=25;
-        end;            
+        end;  
+        SELECT  MAX(idviaje) INTO v_idviaje FROM viajes;
         INSERT INTO viajes (idViaje, idAutocar, idRecorrido, fecha, nPlazasLibres,  Conductor) 
-        VALUES (seq_viajes.nextval, m_idAutocar, m_idRecorrido, m_fecha, plazas, m_conductor);
+        VALUES (v_idviaje+1, m_idAutocar, m_idRecorrido, m_fecha, plazas, m_conductor);
+        commit;
     exception
         when OTHERS then
             --dbms_output.put_line('Otro error no controlado realizando la insercion');
@@ -157,7 +160,7 @@ begin
     WHERE index_name = 'unique constraint (C0015500) violated' ;
     dbms_output.put_line(constraint);*/
     
-    commit;
+    
     
 end;
 /
@@ -213,9 +216,6 @@ begin
   --Caso 4: VIAJE_DUPLICADO
    begin
     crearViaje(1, 2, trunc(current_date)+1, 'Juanito');
-    --añadido para pruebas se respeta el original
-    --crearViaje(1, 2, DATE '2023-4-3', 'Juanito');
-    --crearViaje(1, 1, DATE '2009-1-22', 'Juan');
     dbms_output.put_line('Mal no detecta VIAJE_DUPLICADO');
   exception
     when others then
