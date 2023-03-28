@@ -99,33 +99,65 @@ create or replace procedure crearViaje( m_idRecorrido int, m_idAutocar int, m_fe
     num_recorridos  integer;
     num_autocares integer;
     num_viajes integer;
+    num_plazas integer;
+    plazas integer:=25;
+    constraint varchar(200);
 begin
+    --Control de excepcion de recorrido inexistente
     SELECT COUNT(*) INTO num_recorridos FROM recorridos WHERE idrecorrido = m_idRecorrido;
     IF num_recorridos <=0 THEN
         raise_application_error(-20001, 'Recorrido inexistente.');
-    --ELSE
-        
+    ELSE
+        SELECT COUNT(*) INTO num_autocares FROM autocares WHERE idautocar = m_idAutocar;
+        IF num_autocares <=0 THEN
+            raise_application_error(-20002, 'Autocar inexistente.');
+        END IF;
     END IF;
-    SELECT COUNT(*) INTO num_autocares FROM autocares WHERE idautocar = m_idAutocar;
-    IF num_autocares <=0 THEN
-        raise_application_error(-20002, 'Autocar inexistente.');
-    --ELSE
-        
+    
+    --Control de excepcion viaje duplicado
+    SELECT COUNT(*) INTO num_viajes FROM viajes WHERE idautocar = m_idAutocar AND idrecorrido = m_idRecorrido AND TRUNC(fecha) = TRUNC(m_fecha);
+            --SELECT COUNT(*) INTO num_viajes FROM viajes WHERE idautocar = m_idAutocar AND idrecorrido = m_idRecorrido;
+    IF num_viajes > 0 THEN
+                raise_application_error(-20004, 'Viaje duplicado.');
     END IF;
+    
+    --Control de excepcion autocar ocupado
     SELECT COUNT(*) INTO num_autocares FROM viajes WHERE  idautocar = m_idAutocar AND TRUNC(fecha) = TRUNC(m_fecha);
     IF num_autocares > 0 THEN
         raise_application_error(-20003, 'Autocar ocupado.');
-    --ELSE
-        
     END IF;
-    SELECT COUNT(*) INTO num_viajes FROM viajes WHERE idautocar = m_idAutocar AND idrecorrido = m_idRecorrido AND TRUNC(fecha) = TRUNC(m_fecha);
-    --SELECT COUNT(*) INTO num_viajes FROM viajes WHERE idautocar = m_idAutocar AND idrecorrido = m_idRecorrido;
-    IF num_viajes > 0 THEN
-        raise_application_error(-20004, 'Viaje duplicado.');
-    ELSE
+    
+    --Pasados los controles anteriores podemos realizar la insercion
+    
+    begin
+        begin
+            SELECT b.nplazas INTO num_plazas FROM autocares A 
+            JOIN modelos B ON A.modelo=B.idmodelo            
+            WHERE A.idautocar=m_idAutocar;
+            IF sql%rowcount is not null THEN
+                plazas:=num_plazas;
+            END IF;
+        exception
+            when NO_DATA_FOUND then
+                    dbms_output.put_line('No se encontraron datos en SELECT');
+                    --raise_application_error(-20005, 'Modelo inexistente.');
+                    plazas:=25;
+        end;            
         INSERT INTO viajes (idViaje, idAutocar, idRecorrido, fecha, nPlazasLibres,  Conductor) 
-    VALUES (seq_viajes.nextval, m_idAutocar, m_idRecorrido, m_fecha, 40, m_conductor);
-    END IF;
+        VALUES (seq_viajes.nextval, m_idAutocar, m_idRecorrido, m_fecha, plazas, m_conductor);
+    exception
+        when OTHERS then
+            --dbms_output.put_line('Otro error no controlado realizando la insercion');
+            raise_application_error(-20004, 'Viaje duplicado.');
+        
+    end;
+    
+    --Mas informacion sobre un error unique constraint que se produjo haciendo la practica
+    /*SELECT DISTINCT table_name INTO constraint FROM all_indexes
+    WHERE index_name = 'unique constraint (C0015500) violated' ;
+    dbms_output.put_line(constraint);*/
+    
+    commit;
     
 end;
 /
@@ -181,6 +213,9 @@ begin
   --Caso 4: VIAJE_DUPLICADO
    begin
     crearViaje(1, 2, trunc(current_date)+1, 'Juanito');
+    --añadido para pruebas se respeta el original
+    --crearViaje(1, 2, DATE '2023-4-3', 'Juanito');
+    --crearViaje(1, 1, DATE '2009-1-22', 'Juan');
     dbms_output.put_line('Mal no detecta VIAJE_DUPLICADO');
   exception
     when others then
